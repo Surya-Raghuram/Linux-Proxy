@@ -11,6 +11,7 @@ if (( $EUID == 0 )); then
     exit
 fi
 
+#switch this to a default host ip(eg:172.31.2.4) if needed
 read -p "Please enter the proxy host you want to apply (eg, 172.31.2.4) : " proxy
 echo ""
 
@@ -103,4 +104,4 @@ echo "done."
 
 # All done!
 echo ""
-echo "All done! $proxy successfully applied, if connectivity problem still persists please consider logging out then in or rebooting your system."
+echo "All done! $proxy with username $proxy_username successfully applied, if connectivity problem still persists please consider logging out then in or rebooting your system."
