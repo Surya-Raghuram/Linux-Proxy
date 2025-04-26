@@ -17,7 +17,7 @@ echo ""
 # Prompt for username and password
 read -p "Please enter your proxy username: " proxy_username
 read -s -p "Please enter your proxy password: " proxy_password
-echo ""  # For newline after password input
+echo ""  
 
 echo "Setting up $proxy with Username: $proxy_username"
 
