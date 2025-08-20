@@ -13,7 +13,8 @@ Simple scripts to quickly set and remove system-wide proxy settings on GNU/Linux
   sudo cp /etc/environment ~/environment.backup
 Do not run these scripts using sudo.
 
-Works best on Debian-based distributions like Ubuntu, Kubuntu, Pop!_OS, Linux Mint, etc.
+⚠️ Currently tested and supported only on **Debian-based distributions** (Ubuntu, Kubuntu, Pop!_OS, Linux Mint, etc.).  
+Other distros like Arch, Fedora, or openSUSE are **not yet supported**.  
 
 🚀 How to Use
 - Set Proxy:
@@ -56,6 +57,15 @@ snap proxy settings
   Understand what the script does before running it.
 
   If something goes wrong, it's on you — use responsibly.
+
+  ## 📝 TODO
+
+- [ ] Add support for Arch-based distros (Manjaro, EndeavourOS, Arch Linux)  
+- [ ] Add support for Fedora/RHEL/CentOS (DNF/YUM proxy configs)  
+- [ ] Add GNOME/KDE desktop environment proxy integration  
+- [ ] Export proxy settings in shell configs (~/.bashrc, ~/.zshrc, etc.)  
+- [ ] Add dry-run mode + rollback option for safety  
+- [ ] Provide `.deb` and `.rpm` packages for easier installation  
 
 📢 Suggestions or Issues?
   Feel free to create an issue on this repository.
