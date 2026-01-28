@@ -32,7 +32,7 @@ You’ll be asked to enter the proxy hostname.
 🖥️ If you are using KDE Plasma, enable:
 System Settings → Networking → Wi-Fi & Internet → Proxy → Use system proxy configuration
 
-If for some reason your proxy doesnt change in KDE Plasma Settings even after running scripts, or "Use system proxy configuration" option doesnt read the proxy env variables, use the KDE Specific scripts.
+> ⚠️ If for some reason your proxy doesnt change in KDE Plasma Settings even after running scripts, or "Use system proxy configuration" option doesnt read the proxy env variables, use the KDE Specific scripts.
 
 🌎 Run Scripts from Anywhere
 - Instead of Distro, use your current distro, Arch/ or Debian/
