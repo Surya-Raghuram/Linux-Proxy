@@ -42,6 +42,8 @@ PROXY_HTTP="http://${AUTH}${PROXY_HOST}:${PROXY_PORT}"
 #################################
 # System environment
 #################################
+echo ""
+echo "Configuring environment variables...."
 
 sudo tee /etc/profile.d/proxy.sh >/dev/null <<EOF
 export http_proxy="$PROXY_HTTP"
@@ -52,6 +54,11 @@ export ftp_proxy="$PROXY_HTTP"
 export no_proxy="localhost,127.0.0.1,::1"
 EOF
 
+#Push variables to the active systemd and D-Bus session
+systemctl --user set-environment http_proxy="$PROXY_HTTP" https_proxy="$PROXY_HTTP" HTTP_PROXY="$PROXY_HTTP" HTTPS_PROXY="$PROXY_HTTP" ftp_proxy="$PROXY_HTTP" no_proxy="localhost,127.0.0.1,::1"
+dbus-update-activation-environment --systemd http_proxy https_proxy HTTP_PROXY HTTPS_PROXY ftp_proxy no_proxy
+
+echo "Done!!"
 #################################
 # pacman
 #################################
@@ -64,24 +71,29 @@ if [[ ! -f /etc/sudoers.d/proxy ]]; then
     sudo chmod 440 /etc/sudoers.d/proxy
 fi
 
+echo""
 #################################
 # git
 #################################
+echo "Configuring git...."
 
 git config --global http.proxy "$PROXY_HTTP"
 git config --global https.proxy "$PROXY_HTTP"
 
+echo "Done!!"
 #################################
 # npm
 #################################
+echo "Configuring npm...."
 
 npm config set proxy "$PROXY_HTTP"
 npm config set https-proxy "$PROXY_HTTP"
 
+echo "Done!!"
 #################################
 # KDE Plasma GUI (Plasma 6)
 #################################
-
+echo "Configuring KDE Plasma...."
 # Use Plasma 6 tools
 KWRITE=kwriteconfig6
 
@@ -95,15 +107,19 @@ $KWRITE --file kioslaverc --group "Proxy Settings" --key ProxyPass "$PROXY_PASS"
 # Optional reload (may fail silently, that's fine)
 qdbus6 org.kde.KIO.Scheduler /KIO/Scheduler reparseSlaveConfiguration 2>/dev/null || true
 
+echo "Done!!"
 #################################
 # snap
 #################################
+echo "Configuring snap...."
 
 sudo systemctl restart snapd 2>/dev/null || true
 
+echo "Done!!"
 #################################
 # Firefox
 #################################
+echo "Configuring Firefox...."
 
 FF_PROFILE="$HOME/.mozilla/firefox/r3my975k.default-release"
 
@@ -117,5 +133,7 @@ user_pref("network.proxy.share_proxy_settings", true);
 user_pref("network.proxy.no_proxies_on", "localhost, 127.0.0.1");
 EOF
 
+echo "Done!!"
 echo
 echo "Proxy enabled!!"
+

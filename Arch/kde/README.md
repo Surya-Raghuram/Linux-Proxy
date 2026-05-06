@@ -14,3 +14,14 @@ These scripts were made after realising that for my KDE Plasma setup,
 - pacman was showing errors regarding the XferCommand line, the reasons for which are yet to be understood by me.
 
 I also wanted to make the script change Firefox's proxy settings.
+
+---
+
+## Changelog
+**1)** remove_proxy.sh doesnt unset proxy variables from terminal (noticed from the fact that 'git push' never worked after removing proxy).
+- apply_proxy.sh modifies the ~/.bashrc file to make it so that proxy variables are loaded back in for every terminal and for every kde login session.
+- modified remove_proxy.sh such that it removes from current kde login session perfectly.
+- test by running ```bash env | grep -i proxy``` in terminal before and after running remove_proxy.sh, proxy variables used to still be stored, new scripts make sure they dont.
+
+
+
