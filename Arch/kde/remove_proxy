@@ -11,26 +11,36 @@ echo "=== Disable Proxy ==="
 #################################
 # System env
 #################################
+echo ""
+echo "Removing env varibles...."
 
 sudo rm -f /etc/profile.d/proxy.sh
+
+echo "Done"
 
 #################################
 # git
 #################################
+echo "Removing from git...."
 
 git config --global --unset http.proxy || true
 git config --global --unset https.proxy || true
 
+
+echo "Done"
 #################################
 # npm
 #################################
+echo "Removing from npm...."
 
 npm config delete proxy || true
 npm config delete https-proxy || true
 
+echo "Done"
 #################################
 # KDE Plasma GUI (Plasma 6)
 #################################
+echo "Removing from KDE Plasma...."
 
 # Use Plasma 6 tools
 KWRITE=kwriteconfig6
@@ -46,15 +56,19 @@ $KWRITE --file kioslaverc --group "Proxy Settings" --key socksProxy ""
 # Optional reload (may fail silently, that's fine)
 qdbus6 org.kde.KIO.Scheduler /KIO/Scheduler reparseSlaveConfiguration 2>/dev/null || true
 
+echo "Done"
 #################################
 # snap
 #################################
+echo "Removing from snap...."
 
 sudo systemctl restart snapd 2>/dev/null || true
 
+echo "Done"
 #################################
 # Firefox
 #################################
+echo "Removing from Firefox...."
 
 FF_PROFILE="/home/poke/.mozilla/firefox/r3my975k.default-release"
 
@@ -62,6 +76,20 @@ cat > "$FF_PROFILE/user.js" <<EOF
 user_pref("network.proxy.type", 0);
 EOF
 
+#################################
+# Current shell + systemd env
+#################################
+echo "Removing from current session environment...."
 
-echo
+# unset in the current terminal
+unset http_proxy https_proxy HTTP_PROXY HTTPS_PROXY ftp_proxy no_proxy
+
+# wipe from the active KDE D-Bus session
+dbus-update-activation-environment --systemd http_proxy="" https_proxy="" HTTP_PROXY="" HTTPS_PROXY="" ftp_proxy="" no_proxy=""
+
+# unset in the systemd user session
+systemctl --user unset-environment http_proxy https_proxy HTTP_PROXY HTTPS_PROXY ftp_proxy no_proxy 2>/dev/null || true
+
+echo "Done"
+echo ""
 echo "Proxy disabled everywhere."
