@@ -1,6 +1,6 @@
 #!/bin/bash
 # Author: Surya-Raghuram [GitHub: Surya-Raghuram]
-# Description: Disable proxy everywhere (CLI, pacman, KDE Plasma, browsers)
+# Description: Disable IIITA campus proxy everywhere and clean up
 
 echo "== Disable Proxy =="
 
@@ -11,57 +11,63 @@ if (( $EUID == 0 )); then
 fi
 
 ###############################################################################
-# 1. Environment variables
+# 1. Environment variables (system-wide CLI apps)
 ###############################################################################
-echo "→ Removing environment proxy"
+echo "→ Clearing system-wide environment variables..."
 sudo sed -i '/_proxy/d;/_PROXY/d' /etc/environment
-echo "done."
 
 ###############################################################################
-# 2. Pacman
+# 2. Systemd & Wayland Session (Plasma 6)
 ###############################################################################
-echo "→ Removing pacman proxy"
-sudo sed -i '/ProxyServer/d' /etc/pacman.conf
-echo "done."
+echo "→ Unsetting proxy from active Plasma 6 Wayland session..."
+# Remove variables from systemd user session
+systemctl --user unset-environment http_proxy https_proxy ftp_proxy HTTP_PROXY HTTPS_PROXY FTP_PROXY
+# Flush the DBUS activation environment by passing empty values
+dbus-update-activation-environment --systemd http_proxy= https_proxy= ftp_proxy= HTTP_PROXY= HTTPS_PROXY= FTP_PROXY=
 
 ###############################################################################
-# 3. Yay
+# 3. Pacman & Sudo Fix
 ###############################################################################
-echo "→ Removing yay proxy"
-sed -i '/proxy/d' ~/.config/yay/config.json 2>/dev/null || true
-echo "done."
+echo "→ Removing sudo proxy preservation rule..."
+if [ -f /etc/sudoers.d/00-proxy_env ]; then
+    sudo rm -f /etc/sudoers.d/00-proxy_env
+fi
 
 ###############################################################################
-# 4. KDE Plasma (for browsers & GUI apps)
+# 4. KDE Plasma Settings (kioslaverc)
 ###############################################################################
-echo "→ Disabling KDE Plasma proxy"
-cat > ~/.config/kioslaverc <<EOF
-[Proxy Settings]
-ProxyType=0
-EOF
+echo "→ Disabling KDE Plasma proxy..."
+# Set ProxyType to 0 (No Proxy)
+kwriteconfig6 --file kioslaverc --group "Proxy Settings" --key "ProxyType" 0
+# Delete the URL keys to keep the config clean
+kwriteconfig6 --file kioslaverc --group "Proxy Settings" --key "httpProxy" --delete
+kwriteconfig6 --file kioslaverc --group "Proxy Settings" --key "httpsProxy" --delete
+kwriteconfig6 --file kioslaverc --group "Proxy Settings" --key "ftpProxy" --delete
+
 qdbus org.kde.kded6 /kded reconfigure
-echo "done."
 
 ###############################################################################
-# 5. Other tools
+# 5. Other tools (git, npm, snap)
 ###############################################################################
-echo "→ Removing git proxy"
-git config --global --unset http.proxy 2>/dev/null || true
-git config --global --unset https.proxy 2>/dev/null || true
-echo "done."
+echo "→ Clearing proxy for dev tools..."
+# Supress errors in case they were already unset
+git config --global --unset http.proxy 2>/dev/null
+git config --global --unset https.proxy 2>/dev/null
 
-echo "→ Removing npm proxy"
-npm config delete proxy || true
-npm config delete https-proxy || true
-echo "done."
+if command -v npm &> /dev/null; then
+    npm config delete proxy
+    npm config delete https-proxy
+fi
 
-echo "→ Removing snap proxy"
-sudo snap unset system proxy.http || true
-sudo snap unset system proxy.https || true
-echo "done."
+if command -v snap &> /dev/null; then
+    # The '!' syntax tells snap to unset/delete the configuration key
+    sudo snap set system proxy.http!
+    sudo snap set system proxy.https!
+fi
 
 ###############################################################################
 # Finish
 ###############################################################################
 echo ""
-echo "✅ Proxy disabled everywhere"
+echo "✅ Proxy successfully disabled."
+echo "ℹ️  Restart Zen/your terminal for the current session to clear the cached variables."

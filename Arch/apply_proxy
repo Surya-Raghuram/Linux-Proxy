@@ -1,6 +1,6 @@
 #!/bin/bash
 # Author: Surya-Raghuram [GitHub: Surya-Raghuram]
-# Description: Enable IIITA campus proxy everywhere (CLI, pacman, KDE Plasma, browsers)
+# Description: Enable IIITA campus proxy for Plasma 6 (Wayland), CLI, and browsers
 
 echo "== Enable Proxy =="
 
@@ -20,10 +20,9 @@ proxy_url="http://$proxy_username:$proxy_password@$proxy:8080/"
 ###############################################################################
 # 1. Environment variables (system-wide CLI apps)
 ###############################################################################
-echo "→ Setting environment variables"
+echo "→ Setting system-wide environment variables..."
 sudo sed -i '/_proxy/d;/_PROXY/d' /etc/environment
 sudo sh -c "cat >> /etc/environment <<EOF
-
 http_proxy=$proxy_url
 https_proxy=$proxy_url
 ftp_proxy=$proxy_url
@@ -31,65 +30,60 @@ HTTP_PROXY=$proxy_url
 HTTPS_PROXY=$proxy_url
 FTP_PROXY=$proxy_url
 EOF"
-echo "done."
 
 ###############################################################################
-# 2. Pacman
+# 2. Systemd & Wayland Session (Plasma 6 Fix)
 ###############################################################################
-echo "→ Setting pacman proxy"
-sudo sed -i '/ProxyServer/d' /etc/pacman.conf
-sudo sh -c "echo 'ProxyServer = $proxy_url' >> /etc/pacman.conf"
-echo "done."
+echo "→ Injecting proxy into active Plasma 6 Wayland session..."
+# This ensures Zen and other GUI apps get the proxy without a reboot
+systemctl --user set-environment http_proxy="$proxy_url" https_proxy="$proxy_url" ftp_proxy="$proxy_url" HTTP_PROXY="$proxy_url" HTTPS_PROXY="$proxy_url" FTP_PROXY="$proxy_url"
+dbus-update-activation-environment --systemd http_proxy https_proxy ftp_proxy HTTP_PROXY HTTPS_PROXY FTP_PROXY
 
 ###############################################################################
-# 3. Yay (AUR helper)
+# 3. Pacman & Sudo Fix
 ###############################################################################
-echo "→ Setting yay proxy"
-mkdir -p ~/.config/yay
-cat > ~/.config/yay/config.json <<EOF
-{
-  "proxy": "$proxy_url"
-}
-EOF
-echo "done."
+echo "→ Configuring sudo to preserve proxy for pacman..."
+# sudo strips env vars by default. This forces it to keep proxy variables.
+sudo sh -c 'cat > /etc/sudoers.d/00-proxy_env <<EOF
+Defaults env_keep += "http_proxy https_proxy ftp_proxy HTTP_PROXY HTTPS_PROXY FTP_PROXY"
+EOF'
+sudo chmod 0440 /etc/sudoers.d/00-proxy_env
+# Note: Removed the pacman.conf edit, as pacman uses system env vars via curl.
 
 ###############################################################################
-# 4. KDE Plasma (for browsers & GUI apps)
-# KDE stores proxy settings in ~/.config/kioslaverc
+# 4. KDE Plasma Settings (kioslaverc)
 ###############################################################################
-echo "→ Setting KDE Plasma proxy"
-cat > ~/.config/kioslaverc <<EOF
-[Proxy Settings]
-ProxyType=1
-httpProxy=$proxy_url
-httpsProxy=$proxy_url
-ftpProxy=$proxy_url
-EOF
-# Reload KDE proxy settings (important for Firefox/Chromium/Discover etc.)
+echo "→ Setting KDE Plasma proxy..."
+# kwriteconfig6 is the native Plasma 6 way to write configs safely
+kwriteconfig6 --file kioslaverc --group "Proxy Settings" --key "ProxyType" 1
+kwriteconfig6 --file kioslaverc --group "Proxy Settings" --key "httpProxy" "$proxy_url"
+kwriteconfig6 --file kioslaverc --group "Proxy Settings" --key "httpsProxy" "$proxy_url"
+kwriteconfig6 --file kioslaverc --group "Proxy Settings" --key "ftpProxy" "$proxy_url"
+
 qdbus org.kde.kded6 /kded reconfigure
-echo "done."
 
 ###############################################################################
 # 5. Other tools (git, npm, snap)
 ###############################################################################
-echo "→ Setting proxy for git"
+echo "→ Setting proxy for dev tools..."
 git config --global http.proxy "$proxy_url"
 git config --global https.proxy "$proxy_url"
-echo "done."
 
-echo "→ Setting proxy for npm"
-npm config set proxy "$proxy_url"
-npm config set https-proxy "$proxy_url"
-echo "done."
+# Yay uses pacman's environment variables, so no custom JSON edit is needed anymore.
 
-echo "→ Setting proxy for snap"
-sudo snap set system proxy.http="$proxy_url"
-sudo snap set system proxy.https="$proxy_url"
-echo "done."
+if command -v npm &> /dev/null; then
+    npm config set proxy "$proxy_url"
+    npm config set https-proxy "$proxy_url"
+fi
+
+if command -v snap &> /dev/null; then
+    sudo snap set system proxy.http="$proxy_url"
+    sudo snap set system proxy.https="$proxy_url"
+fi
 
 ###############################################################################
 # Finish
 ###############################################################################
 echo ""
-echo "✅ Proxy applied everywhere ($proxy) with username: $proxy_username"
-echo "ℹ️  Logout/reboot if some apps don't pick it up."
+echo "✅ Proxy applied everywhere ($proxy)."
+echo "ℹ️  Restart Zen/your terminal for the current session to inherit the changes."
